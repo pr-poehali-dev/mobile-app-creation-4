@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import Icon from '@/components/ui/icon';
@@ -7,21 +7,103 @@ interface TrackingPageProps {
   orderId: number | null;
 }
 
+interface YMapsAPI {
+  ready: (callback: () => void) => void;
+  Map: new (element: HTMLElement | null, options: unknown) => YMapsMap;
+  Placemark: new (coords: number[], properties: unknown, options: unknown) => YMapsPlacemark;
+}
+
+interface YMapsMap {
+  geoObjects: {
+    add: (placemark: YMapsPlacemark) => void;
+  };
+  setCenter: (coords: number[], zoom: number, options?: unknown) => void;
+}
+
+interface YMapsPlacemark {
+  geometry: {
+    setCoordinates: (coords: number[]) => void;
+  };
+}
+
+declare global {
+  interface Window {
+    ymaps: YMapsAPI;
+  }
+}
+
 const TrackingPage = ({ orderId }: TrackingPageProps) => {
+  const mapRef = useRef<HTMLDivElement>(null);
   const [workerPosition, setWorkerPosition] = useState({ lat: 55.751244, lng: 37.618423 });
   const [estimatedTime, setEstimatedTime] = useState(45);
+  const [mapInstance, setMapInstance] = useState<YMapsMap | null>(null);
+  const [workerPlacemark, setWorkerPlacemark] = useState<YMapsPlacemark | null>(null);
+
+  useEffect(() => {
+    if (!orderId || !mapRef.current) return;
+
+    const initialLat = workerPosition.lat;
+    const initialLng = workerPosition.lng;
+
+    const initMap = () => {
+      if (!window.ymaps) {
+        setTimeout(initMap, 100);
+        return;
+      }
+
+      window.ymaps.ready(() => {
+        const map = new window.ymaps.Map(mapRef.current, {
+          center: [initialLat, initialLng],
+          zoom: 14,
+          controls: ['zoomControl'],
+        });
+
+        const placemark = new window.ymaps.Placemark(
+          [initialLat, initialLng],
+          {
+            hintContent: 'Специалист',
+            balloonContent: 'Иван Смирнов',
+          },
+          {
+            preset: 'islands#blueCircleDotIcon',
+            iconColor: '#4a9eff',
+          }
+        );
+
+        map.geoObjects.add(placemark);
+        setMapInstance(map);
+        setWorkerPlacemark(placemark);
+      });
+    };
+
+    initMap();
+  }, [orderId]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setWorkerPosition((prev) => ({
-        lat: prev.lat + (Math.random() - 0.5) * 0.001,
-        lng: prev.lng + (Math.random() - 0.5) * 0.001,
-      }));
+      setWorkerPosition((prev) => {
+        const newPos = {
+          lat: prev.lat + (Math.random() - 0.5) * 0.001,
+          lng: prev.lng + (Math.random() - 0.5) * 0.001,
+        };
+
+        if (workerPlacemark) {
+          workerPlacemark.geometry.setCoordinates([newPos.lat, newPos.lng]);
+        }
+
+        if (mapInstance) {
+          mapInstance.setCenter([newPos.lat, newPos.lng], 14, {
+            duration: 300,
+          });
+        }
+
+        return newPos;
+      });
       setEstimatedTime((prev) => Math.max(0, prev - 1));
     }, 3000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [workerPlacemark, mapInstance]);
 
   if (!orderId) {
     return (
@@ -35,20 +117,10 @@ const TrackingPage = ({ orderId }: TrackingPageProps) => {
 
   return (
     <div className="max-w-lg mx-auto h-screen flex flex-col">
-      <div className="relative flex-1 bg-secondary/30">
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center">
-            <div className="w-32 h-32 bg-primary/20 rounded-full flex items-center justify-center mb-4 animate-pulse">
-              <Icon name="MapPin" size={48} className="text-primary" />
-            </div>
-            <p className="text-sm text-muted-foreground">Карта с маркером специалиста</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              Координаты: {workerPosition.lat.toFixed(6)}, {workerPosition.lng.toFixed(6)}
-            </p>
-          </div>
-        </div>
+      <div className="relative flex-1">
+        <div ref={mapRef} className="w-full h-full" />
 
-        <div className="absolute top-4 left-4 right-4">
+        <div className="absolute top-4 left-4 right-4 z-10">
           <div className="bg-card rounded-2xl p-3 shadow-lg flex items-center gap-3">
             <div className="w-12 h-12 bg-primary/20 rounded-full flex items-center justify-center">
               <Icon name="Navigation" size={20} className="text-primary" />
