@@ -1,107 +1,141 @@
 import { useState } from 'react';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import Icon from '@/components/ui/icon';
 
 interface HomePageProps {
-  onProductClick: (id: number) => void;
+  onOrderCreated: (orderId: number) => void;
 }
 
-const products = [
-  { id: 1, name: 'Беспроводные наушники', price: 4990, image: '🎧', category: 'Аудио', badge: 'Хит' },
-  { id: 2, name: 'Смарт-часы Pro', price: 12990, image: '⌚', category: 'Гаджеты', badge: 'Новинка' },
-  { id: 3, name: 'Портативная колонка', price: 2490, image: '🔊', category: 'Аудио', badge: null },
-  { id: 4, name: 'Фитнес-браслет', price: 3990, image: '💪', category: 'Спорт', badge: 'Скидка -20%' },
-  { id: 5, name: 'Power Bank 20000mAh', price: 1990, image: '🔋', category: 'Аксессуары', badge: null },
-  { id: 6, name: 'Bluetooth-клавиатура', price: 5490, image: '⌨️', category: 'Гаджеты', badge: null },
+const services = [
+  { id: 1, name: 'Сборка мебели', icon: '🛠️', time: '2-4 часа' },
+  { id: 2, name: 'Мелкий ремонт', icon: '🔧', time: '1-3 часа' },
+  { id: 3, name: 'Электрика', icon: '💡', time: '1-2 часа' },
+  { id: 4, name: 'Сантехника', icon: '🚰', time: '2-3 часа' },
+  { id: 5, name: 'Переезд', icon: '📦', time: '3-6 часов' },
+  { id: 6, name: 'Уборка', icon: '🧹', time: '2-4 часа' },
 ];
 
-const categories = ['Все', 'Аудио', 'Гаджеты', 'Спорт', 'Аксессуары'];
+const HomePage = ({ onOrderCreated }: HomePageProps) => {
+  const [selectedService, setSelectedService] = useState<number | null>(null);
+  const [address, setAddress] = useState('');
+  const [description, setDescription] = useState('');
+  const [hours, setHours] = useState('2');
 
-const HomePage = ({ onProductClick }: HomePageProps) => {
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Все');
+  const handleOrder = () => {
+    if (!selectedService || !address) return;
+    const orderId = Date.now();
+    onOrderCreated(orderId);
+  };
 
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'Все' || product.category === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const totalCost = parseInt(hours) * 500;
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 animate-fade-in">
-      <header className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-            ShopApp
-          </h1>
-          <button className="p-2 hover:bg-muted rounded-full transition-colors">
-            <Icon name="Bell" size={24} />
-          </button>
-        </div>
-        
-        <div className="relative">
-          <Icon name="Search" size={20} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            placeholder="Поиск товаров..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 h-12 bg-card"
-          />
-        </div>
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold mb-2">Разнорабочий</h1>
+        <p className="text-muted-foreground">Быстрый вызов специалиста — 500 ₽/час</p>
       </header>
 
-      <div className="mb-6 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {categories.map((category) => (
-          <Button
-            key={category}
-            variant={selectedCategory === category ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setSelectedCategory(category)}
-            className="whitespace-nowrap"
-          >
-            {category}
-          </Button>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4">
-        {filteredProducts.map((product, index) => (
-          <div
-            key={product.id}
-            onClick={() => onProductClick(product.id)}
-            className="bg-card rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 animate-slide-up"
-            style={{ animationDelay: `${index * 50}ms` }}
-          >
-            {product.badge && (
-              <Badge className="absolute top-2 right-2 z-10 bg-accent text-accent-foreground">
-                {product.badge}
-              </Badge>
-            )}
-            <div className="aspect-square bg-gradient-to-br from-primary/10 to-secondary/10 flex items-center justify-center text-6xl">
-              {product.image}
-            </div>
-            <div className="p-3">
-              <p className="text-xs text-muted-foreground mb-1">{product.category}</p>
-              <h3 className="font-semibold text-sm mb-2 line-clamp-2">{product.name}</h3>
-              <div className="flex items-center justify-between">
-                <p className="text-lg font-bold text-primary">{product.price} ₽</p>
-                <button className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center hover:scale-110 transition-transform">
-                  <Icon name="Plus" size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredProducts.length === 0 && (
-        <div className="text-center py-16">
-          <div className="text-6xl mb-4">🔍</div>
-          <p className="text-muted-foreground">Ничего не найдено</p>
+      <div className="mb-6">
+        <h2 className="text-lg font-semibold mb-3">Выберите услугу</h2>
+        <div className="grid grid-cols-2 gap-3">
+          {services.map((service) => (
+            <button
+              key={service.id}
+              onClick={() => setSelectedService(service.id)}
+              className={`bg-card rounded-xl p-4 text-left transition-all hover:scale-105 ${
+                selectedService === service.id
+                  ? 'ring-2 ring-primary shadow-lg shadow-primary/20'
+                  : 'hover:bg-secondary/50'
+              }`}
+            >
+              <div className="text-4xl mb-2">{service.icon}</div>
+              <h3 className="font-semibold text-sm mb-1">{service.name}</h3>
+              <p className="text-xs text-muted-foreground">{service.time}</p>
+            </button>
+          ))}
         </div>
-      )}
+      </div>
+
+      <div className="space-y-4 mb-6">
+        <div>
+          <Label htmlFor="address" className="text-sm mb-2 block">
+            Адрес
+          </Label>
+          <div className="relative">
+            <Icon name="MapPin" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              id="address"
+              placeholder="Куда приехать специалисту?"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              className="pl-10 h-12 bg-secondary/50 border-secondary"
+            />
+          </div>
+        </div>
+
+        <div>
+          <Label htmlFor="hours" className="text-sm mb-2 block">
+            Количество часов
+          </Label>
+          <Input
+            id="hours"
+            type="number"
+            min="1"
+            max="12"
+            value={hours}
+            onChange={(e) => setHours(e.target.value)}
+            className="h-12 bg-secondary/50 border-secondary"
+          />
+        </div>
+
+        <div>
+          <Label htmlFor="description" className="text-sm mb-2 block">
+            Описание работы (опционально)
+          </Label>
+          <Textarea
+            id="description"
+            placeholder="Опишите, что нужно сделать..."
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            className="min-h-24 bg-secondary/50 border-secondary resize-none"
+          />
+        </div>
+      </div>
+
+      <div className="bg-card rounded-2xl p-4 mb-6">
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground">Стоимость часа</span>
+          <span className="font-semibold">500 ₽</span>
+        </div>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-muted-foreground">Часов</span>
+          <span className="font-semibold">{hours}</span>
+        </div>
+        <div className="h-px bg-border my-3" />
+        <div className="flex justify-between items-center">
+          <span className="text-lg font-bold">Итого</span>
+          <span className="text-2xl font-bold text-primary">{totalCost} ₽</span>
+        </div>
+      </div>
+
+      <Button
+        onClick={handleOrder}
+        disabled={!selectedService || !address}
+        className="w-full h-14 text-lg font-semibold shadow-lg shadow-primary/30"
+        size="lg"
+      >
+        <Icon name="Zap" size={20} className="mr-2" />
+        Заказать сейчас
+      </Button>
+
+      <div className="mt-6 flex items-center gap-2 justify-center text-sm text-muted-foreground">
+        <Icon name="Clock" size={16} />
+        <span>Специалист приедет в течение 30-60 минут</span>
+      </div>
     </div>
   );
 };

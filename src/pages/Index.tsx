@@ -1,61 +1,42 @@
 import { useState } from 'react';
 import HomePage from '@/pages/Home';
-import ProductPage from '@/pages/Product';
-import CartPage from '@/pages/Cart';
+import TrackingPage from '@/pages/Tracking';
+import OrdersPage from '@/pages/Orders';
 import ProfilePage from '@/pages/Profile';
-import AuthPage from '@/pages/Auth';
 import Navigation from '@/components/Navigation';
 
-type Screen = 'home' | 'product' | 'cart' | 'profile' | 'auth';
+type Screen = 'home' | 'tracking' | 'orders' | 'profile';
 
 const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<Screen>('home');
-  const [selectedProductId, setSelectedProductId] = useState<number | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeOrderId, setActiveOrderId] = useState<number | null>(null);
 
-  const handleProductClick = (id: number) => {
-    setSelectedProductId(id);
-    setCurrentScreen('product');
-  };
-
-  const handleAuthSuccess = () => {
-    setIsAuthenticated(true);
-    setCurrentScreen('home');
-  };
-
-  const handleNavigate = (screen: Screen) => {
-    if (screen === 'profile' && !isAuthenticated) {
-      setCurrentScreen('auth');
-    } else {
-      setCurrentScreen(screen);
-    }
+  const handleOrderCreated = (orderId: number) => {
+    setActiveOrderId(orderId);
+    setCurrentScreen('tracking');
   };
 
   const renderScreen = () => {
     switch (currentScreen) {
       case 'home':
-        return <HomePage onProductClick={handleProductClick} />;
-      case 'product':
-        return <ProductPage productId={selectedProductId!} onBack={() => setCurrentScreen('home')} />;
-      case 'cart':
-        return <CartPage />;
+        return <HomePage onOrderCreated={handleOrderCreated} />;
+      case 'tracking':
+        return <TrackingPage orderId={activeOrderId} />;
+      case 'orders':
+        return <OrdersPage onOrderClick={(id) => { setActiveOrderId(id); setCurrentScreen('tracking'); }} />;
       case 'profile':
         return <ProfilePage />;
-      case 'auth':
-        return <AuthPage onSuccess={handleAuthSuccess} onClose={() => setCurrentScreen('home')} />;
       default:
-        return <HomePage onProductClick={handleProductClick} />;
+        return <HomePage onOrderCreated={handleOrderCreated} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      {currentScreen !== 'auth' && (
-        <Navigation currentScreen={currentScreen} onNavigate={handleNavigate} />
-      )}
+    <div className="min-h-screen bg-background">
       <main className="pb-20">
         {renderScreen()}
       </main>
+      <Navigation currentScreen={currentScreen} onNavigate={setCurrentScreen} />
     </div>
   );
 };
